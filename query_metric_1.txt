@@ -1,0 +1,18 @@
+WITH CTE AS (
+    SELECT 
+        customer_id, 
+        session_id, 
+        CASE 
+            WHEN COALESCE(((increment) + 1) - LAG(increment + 1) OVER (PARTITION BY customer_id ORDER BY session_id), 0) = 0 
+            THEN 1 
+            ELSE ((increment) + 1) - LAG(increment + 1) OVER (PARTITION BY customer_id ORDER BY session_id) 
+        END AS total_sessions_before_order 
+    FROM 
+        tb_events 
+    WHERE 
+        event_type = 'placed_order'
+)
+SELECT 
+    percentile_cont(0.5) WITHIN GROUP (ORDER BY total_sessions_before_order) AS mediana 
+FROM 
+    CTE;

@@ -1,0 +1,36 @@
+WITH a AS (
+    SELECT 
+        customer_id, 
+        MIN(timestamp) AS timestamp 
+    FROM 
+        tb_events 
+    WHERE 
+        event_type = 'placed_order' 
+    GROUP BY 
+        customer_id
+), 
+b AS (
+    SELECT 
+        customer_id, 
+        timestamp, 
+        time 
+    FROM 
+        tb_events 
+    WHERE 
+        new_session = 0
+), 
+c AS (
+    SELECT 
+        a.customer_id, 
+        SUM(time) AS time 
+    FROM 
+        a 
+    JOIN 
+        b ON a.customer_id = b.customer_id AND a.timestamp >= b.timestamp 
+    GROUP BY 
+        a.customer_id
+)
+SELECT 
+    (PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY time))/60 AS mediana 
+FROM 
+    c;
